@@ -1,0 +1,23 @@
+embedding:
+  provider: sentence-transformers
+  model_name: all-MiniLM-L6-v2
+index:
+  top_k: 8
+  normalize: true
+  use_gpu: false
+rag:
+  max_context_chars: 6000
+  prompt_template: |
+    You are a fashion stylist. Using the retrieved snippets below, craft 3 outfit recommendations.
+    Each recommendation should include:
+    - Title (bold)
+    - Key pieces (bullet list)
+    - Why it works (1-2 sentences)
+    - Suggested colors and brand hints if present
+    Keep it practical, friendly, and concise.
+    Retrieved evidence:
+    {context}
+ui:
+  default_filters:
+    style: ["casual", "business casual", "streetwear", "evening"]
+    price_range: [50, 2000]

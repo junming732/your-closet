@@ -1,0 +1,8 @@
+{
+  "feeds": [
+    "https://www.vogue.com/rss",
+    "https://www.gq.com/rss",
+    "https://www.refinery29.com/en-us/fashion/rss.xml",
+    "https://www.whowhatwear.com/rss"
+  ]
+}
