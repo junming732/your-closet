@@ -1,0 +1,41 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environments
+.env
+.venv/
+venv/
+ENV/
+
+# Jupyter / IPython
+.ipynb_checkpoints
+*.ipynb_checkpoints
+.jupyter/
+.local/
+
+# VSCode / IDE configs
+.vscode/
+.idea/
+
+# Data / index (large or regenerable)
+data/raw/
+data/curated/
+data/index/
+
+# Secrets
+*.env
+.env.*
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# lint
+.ruff_cache

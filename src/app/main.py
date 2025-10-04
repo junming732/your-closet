@@ -1,0 +1,289 @@
+import gradio as gr
+import pandas as pd
+from src.app.ui_config import fashion_theme, custom_css, occasions, seasons
+
+
+from src.app.wardrobe_app import (
+    add_item_to_wardrobe, upload_csv, enter_edit_mode, exit_edit_mode,
+    update_item_choices, delete_selected_items, clear_wardrobe,
+    export_wardrobe_csv, generate_outfit, chat_response
+)
+
+
+from src.retrieval.gemini_rag import (
+    make_client, GeminiEmbeddings, load_pdf_as_documents,
+    chunk_docs, get_vectorstore
+)
+# Set up
+client = make_client()
+embeddings = GeminiEmbeddings(client)
+pdf_docs = load_pdf_as_documents("original_contributions/BeginnerGuide_howtodress_original.pdf")
+chunks = chunk_docs(pdf_docs)
+db = get_vectorstore(chunks, embeddings)
+
+
+# --- Gradio app state ---
+# UI
+fashion_theme = gr.themes.Soft(
+    primary_hue="stone",
+    secondary_hue="stone",
+    neutral_hue="stone",
+).set(
+    body_background_fill="linear-gradient(160deg, #f7f9f7 0%, #e8f0e8 100%)",
+    block_background_fill="#f5f3f0",
+    # Primary button colors (darker green for main actions)
+    button_primary_background_fill="#8a9a8a",
+    button_primary_background_fill_hover="#6b7c6b",
+    button_primary_text_color="white",
+
+    # Secondary button colors (lighter green for secondary actions)
+    button_secondary_background_fill="#b8c8b8",
+    button_secondary_background_fill_hover="#9ab09a",
+    button_secondary_text_color="white",
+    body_text_color="#4a4540",
+    block_label_text_color="#5a534d",
+    block_label_background_fill="#e8e4df",
+    input_background_fill="#faf8f5",
+    input_border_color="#d4cdc4",
+    block_border_color="#e0d8d0",
+    block_title_text_color="#4a4540",
+    link_text_color="#6b6460",
+    link_text_color_hover="#8a9a8a",
+)
+
+with gr.Blocks(
+    theme=fashion_theme,
+    title="Fashion Assistant",
+    css=custom_css) as demo:
+
+    gr.Markdown("# Your Personal Fashion Stylist")
+
+    with gr.Tabs():
+        # TAB 1: Wardrobe Management
+        with gr.Tab("Your Wardrobe"):
+            # CSV Upload button in top right
+            with gr.Row():
+                gr.Markdown("")
+                csv_upload = gr.UploadButton(
+                    "Upload CSV",
+                    file_types=[".csv"],
+                    file_count="single", # One file at a time
+                    variant="secondary", # Secondary button style
+                    size="sm",           # Small button size
+                    scale=0,
+                    min_width=120
+                )
+
+            # Input fields in a 2x2 grid
+            with gr.Row():
+                item_name = gr.Textbox(label="Item (e.g., Dress, Jeans)", placeholder="e.g., Dress, Jeans", max_lines=1, container=True, scale=1, elem_classes="centered-input")
+                item_color = gr.Textbox(label="Color", placeholder="e.g., Blue, Black", max_lines=1, container=True, scale=1, elem_classes="centered-input")
+
+            with gr.Row():
+                item_pattern = gr.Textbox(label="Pattern", placeholder="e.g., Striped, Floral", max_lines=1, container=True, scale=1, elem_classes="centered-input")
+                item_material = gr.Textbox(label="Material", placeholder="e.g., Cotton, Leather", max_lines=1, container=True, scale=1, elem_classes="centered-input")
+
+            # Add Item button
+            # Primary action button
+            with gr.Row():
+                add_btn = gr.Button("+ Add Item", variant="primary", size="sm", scale=0, min_width=150)
+
+            # My Closet title with edit icon
+            with gr.Row():
+                gr.Markdown("# My Closet")
+                with gr.Column(scale=0, min_width=200):
+                    with gr.Row():
+                        edit_icon_btn = gr.Button("✎ Edit", variant="secondary", size="sm", scale=0)
+                        done_editing_btn = gr.Button("Done", variant="primary", size="sm", scale=0, visible=False) # Hidden by default
+                        delete_selected_btn = gr.Button("Delete", variant="stop", size="sm", scale=0, visible=False) # Hidden by default
+
+            gr.Markdown("*In edit mode, click the checkboxes in the 'Select' column, then click Delete button*")
+
+            # Interactive table displaying wardrobe items
+            # Starts as non-interactive (read-only); becomes editable in edit mode
+            wardrobe_display = gr.Dataframe(
+                value=pd.DataFrame(columns=["Item", "Color", "Pattern", "Material"]),
+                headers=["Item", "Color", "Pattern", "Material"],
+                label="",
+                interactive=False,
+                row_count=(3, "dynamic")
+            )
+
+            # Action buttons below table
+            with gr.Row():
+                clear_table_btn = gr.Button("Clear Table", variant="stop", size="sm")
+                export_csv_btn = gr.Button("Export CSV", variant="secondary", size="sm")
+
+            # Hidden file component for CSV download
+            # Becomes visible when export button is clicked
+            export_file = gr.File(label="Download Wardrobe CSV", visible=False)
+
+        # TAB 2: Interactive Outfit Builder
+        with gr.Tab("Build Outfit"):
+            gr.Markdown("Get styling advice based on your wardrobe")
+
+            with gr.Row():
+                occasion = gr.Dropdown(
+                    choices=occasions,
+                    label="Occasion",
+                    value="Casual"
+                )
+                season = gr.Dropdown(
+                    choices=seasons,
+                    label="Season",
+                    value="Spring (10-20°C)"
+                )
+
+            selected_items = gr.Dropdown(
+                choices=[], # Populated dynamically from wardrobe
+                label="(Optional) Choose items from your wardrobe",
+                multiselect=True, # Allow selecting multiple items
+                value=[] # No items selected by default
+            )
+
+            generate_btn = gr.Button("Generate Outfit", variant="primary")
+            outfit_output = gr.Textbox(label="Your Outfit", lines=6, max_lines=10, interactive=False)
+
+        # TAB 3: Chat Mode
+        with gr.Tab("Chat with Stylist"):
+            gr.Markdown("Ask questions or request outfit recommendations")
+
+            chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
+            msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
+
+            with gr.Row():
+                send_btn = gr.Button("Send", variant="primary")
+                clear_chat_btn = gr.Button("Clear")
+
+    def user_msg(message, history):
+        return "", history + [{"role": "user", "content": message}]
+
+    def bot_msg(history, wardrobe, occ, seas):
+        user_message = history[-1]["content"]
+        for response in chat_response(user_message, history[:-1], wardrobe, occ, seas):
+            if len(history) > 0 and history[-1]["role"] == "user":
+                history.append({"role": "assistant", "content": response})
+            else:
+                history[-1] = {"role": "assistant", "content": response}
+            yield history
+
+    # Events
+
+    # Add item button: add to wardrobe -> clear inputs -> update dropdown
+    add_btn.click(
+        fn=add_item_to_wardrobe,
+        inputs=[item_name, item_color, item_pattern, item_material, wardrobe_display],
+        outputs=wardrobe_display
+    ).then(
+        fn=lambda: ("", "", "", ""), # Clear all input fields
+        outputs=[item_name, item_color, item_pattern, item_material]
+    ).then(
+        fn=update_item_choices, # Update item selector dropdown
+        inputs=[wardrobe_display],
+        outputs=[selected_items]
+    )
+
+    # CSV upload: merge with wardrobe -> update dropdown
+    csv_upload.upload(
+        fn=upload_csv,
+        inputs=[csv_upload, wardrobe_display],
+        outputs=wardrobe_display
+    ).then(
+        fn=update_item_choices,
+        inputs=[wardrobe_display],
+        outputs=[selected_items]
+    )
+
+    # Enter edit mode: add Select column, show edit buttons
+    edit_icon_btn.click(
+        fn=enter_edit_mode,
+        inputs=[wardrobe_display],
+        outputs=[wardrobe_display, edit_icon_btn, done_editing_btn, delete_selected_btn]
+    )
+
+    # Exit edit mode: remove Select column, hide edit buttons, update dropdown
+    done_editing_btn.click(
+        fn=exit_edit_mode,
+        inputs=[wardrobe_display],
+        outputs=[wardrobe_display, edit_icon_btn, done_editing_btn, delete_selected_btn]
+    ).then(
+        # After exiting edit mode, refresh the "Choose items" dropdown with updated wardrobe
+        fn=update_item_choices,
+        inputs=[wardrobe_display],
+        outputs=[selected_items]
+    )
+
+    # Delete selected items from wardrobe table
+    delete_selected_btn.click(
+        fn=delete_selected_items,
+        inputs=[wardrobe_display],
+        outputs=wardrobe_display
+    ).then(
+        # Refresh dropdown after deletion
+        fn=update_item_choices,
+        inputs=[wardrobe_display],
+        outputs=[selected_items]
+    )
+
+    # Clear entire wardrobe table
+    clear_table_btn.click(
+        fn=clear_wardrobe,
+        outputs=wardrobe_display
+    ).then(
+        # Refresh dropdown to show empty list
+        fn=update_item_choices,
+        inputs=[wardrobe_display],
+        outputs=[selected_items]
+    )
+
+    # Export wardrobe table to CSV file
+    export_csv_btn.click(
+        fn=export_wardrobe_csv,
+        inputs=[wardrobe_display],
+        outputs=[export_file]
+    )
+
+    # Generate outfit suggestion based on wardrobe, occasion, season, and (optional) selected items
+    generate_btn.click(
+        fn=generate_outfit,
+        inputs=[wardrobe_display, occasion, season, selected_items],
+        outputs=outfit_output
+    )
+    # Handle chat: when user presses Enter in text box
+    msg.submit(
+        fn=user_msg,
+        inputs=[msg, chatbot],
+        outputs=[msg, chatbot]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+
+    # Handle chat: when user clicks Send button
+    send_btn.click(
+        fn=user_msg,
+        inputs=[msg, chatbot],
+        outputs=[msg, chatbot]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+
+    clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
+
+    # --- FOOTER BANNER (local image) ---
+    banner_path = "bla.drawio (1).png"
+    with gr.Row(elem_classes="footer-banner"):
+        gr.Image(
+            value=banner_path,
+            show_label=False,
+            container=False,
+            interactive=False
+        )
+
+if __name__ == "__main__":
+    demo.launch(server_name="0.0.0.0", server_port=7861)
+
+
