@@ -274,7 +274,7 @@ with gr.Blocks(
     clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
 
     # --- FOOTER BANNER (local image) ---
-    banner_path = "bla.drawio (1).png"
+    banner_path = "src/assets/bla.drawio (1).png"
     with gr.Row(elem_classes="footer-banner"):
         gr.Image(
             value=banner_path,
