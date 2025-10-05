@@ -39,7 +39,7 @@ GOOGLE_API_KEY=your_api_key_here
 
 ## Building & Updating the Fashion Theory RAG Index
 
-The **Fashion Theory Q&A** feature uses a small set of public-domain fashion texts stored in the `fashion_theory_docs/` folder.
+The **Fashion Theory Q&A** feature uses a small set of public-domain fashion texts stored in the `open_fashion_texts/` folder.
 Before running the app for the first time (or after adding/removing documents), you must (re)build the FAISS index:
 
 ```bash
@@ -49,7 +49,7 @@ python -m src.scripts.build_fashion_theory_index
 
 This script will:
 
-- Load all PDFs and TXT files from `fashion_theory_docs/`
+- Load all PDFs and TXT files from `open_fashion_texts/`
 - Chunk and embed them with Gemini
 - Save the FAISS index to `faiss_index/fashion_theory/`
 
@@ -79,8 +79,8 @@ src/
     gemini_rag.py             # Gemini embeddings & outfit-advice RAG
     fashion_theory_rag.py      # Self-contained Fashion Theory RAG module
   scripts/
-    build_fashion_theory_index.py  # Build FAISS index from fashion_theory_docs/
-fashion_theory_docs/          # Place public-domain PDFs/TXT here
+    build_fashion_theory_index.py  # Build FAISS index from open_fashion_texts/
+open_fashion_texts/          # Place public-domain PDFs/TXT here
 faiss_index/fashion_theory/   # Saved FAISS index
 requirements.txt
 .env.example                  # sample environment variables
