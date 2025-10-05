@@ -9,11 +9,14 @@ from src.app.wardrobe_app import (
     export_wardrobe_csv, generate_outfit, chat_response
 )
 
-
 from src.retrieval.gemini_rag import (
     make_client, GeminiEmbeddings, load_pdf_as_documents,
     chunk_docs, get_vectorstore
+
 )
+
+from src.retrieval.fashion_theory_rag import make_client, generate_fashion_theory_advice
+
 # Set up
 client = make_client()
 embeddings = GeminiEmbeddings(client)
@@ -150,6 +153,16 @@ with gr.Blocks(
 
             chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
             msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
+
+            def handle_fashion_theory_chat(user_message, history):
+                answer = generate_fashion_theory_advice(client, user_message)
+                history = history + [
+                    {"role": "user", "content": user_message},
+                    {"role": "assistant", "content": answer}
+                ]
+                return history, ""
+
+            msg.submit(handle_fashion_theory_chat, [msg, chatbot], [chatbot, msg])
 
             with gr.Row():
                 send_btn = gr.Button("Send", variant="primary")
