@@ -196,51 +196,70 @@ def update_item_choices(wardrobe):
     return gr.update(choices=get_all_items(wardrobe))
 
 def generate_outfit(wardrobe_df: pd.DataFrame, occasion: str, season: str, selected_items: list[str]) -> str:
+    """
+    Generate a personalized outfit suggestion using the user's wardrobe and RAG-based style knowledge.
+    """
     if wardrobe_df.empty:
         return "Add items to your wardrobe first!"
-
+    # Prepare wardrobe text
     wardrobe_context = format_wardrobe_for_prompt(wardrobe_df)
-
-    if selected_items and len(selected_items) > 0:
+    # CASE 1 — user selected specific items
+    if selected_items:
         selected_text = "\n".join([f"- {item}" for item in selected_items])
         base_prompt = f"""
         You are a professional fashion stylist.
-
         USER'S FULL WARDROBE:
         {wardrobe_context}
-
         USER SELECTED ITEMS:
         {selected_text}
-
         Create a complete outfit for:
         Occasion: {occasion}
         Season: {season}
-
-        The user has selected specific items they want to wear. Build an outfit incorporating these items and suggest complementary pieces from their wardrobe. Provide styling tips for how to wear everything together.
+        The user wants to include these specific items in their outfit.
+        Build a stylish, cohesive look around those items by adding complementary pieces ONLY from their wardrobe.
+        STYLIST RULES:
+        1) Build the outfit ONLY with items from the user's wardrobe above. Do NOT invent items.
+        2) EXTREME EXCEPTION — Missing Category:
+        - If an ENTIRE category required for the outfit is absent from the wardrobe (e.g., no shoes uploaded at all), you may suggest ONE external item.
+        - You MUST clearly label it as: "Suggestion (missing category): <what & why>".
+        - Keep it minimal and complementary to the user's style.
+        3) Occasion Mismatch:
+        - If the wardrobe cannot reasonably meet the occasion (e.g., only gym items for a formal wedding), start by assembling the best possible outfit from the existing wardrobe,
+        then clearly state: "Note: Your current wardrobe lacks appropriate options for this occasion."
+        - Optionally include up to TWO "Suggestion (gap): ..." lines to fill essentials.
+        4) Provide specific pairing/styling tips (fit, color balance, layering, footwear, accessories) based ONLY on items listed.
+        5) Keep recommendations concise and actionable.
         """
+    # CASE 2 — no selected items
     else:
         base_prompt = f"""
         You are a professional fashion stylist.
-
         USER'S FULL WARDROBE:
         {wardrobe_context}
-
         Create a complete outfit for:
         Occasion: {occasion}
         Season: {season}
-
-        Recommend specific items from their wardrobe and provide styling tips for how to wear everything together.
+        STYLIST RULES:
+        1) Build the outfit ONLY with items from the user's wardrobe above. Do NOT invent items.
+        2) EXTREME EXCEPTION — Missing Category:
+        - If an ENTIRE category required for the outfit is absent from the wardrobe (e.g., no shoes uploaded at all), you may suggest ONE external item.
+        - You MUST clearly label it as: "Suggestion (missing category): <what & why>".
+        - Keep it minimal and complementary to the user's style.
+        3) Occasion Mismatch:
+        - If the wardrobe cannot reasonably meet the occasion (e.g., only gym items for a formal wedding), start by assembling the best possible outfit from the existing wardrobe,
+        then clearly state: "Note: Your current wardrobe lacks appropriate options for this occasion."
+        - Optionally include up to TWO "Suggestion (gap): ..." lines to fill essentials.
+        4) Provide specific pairing/styling tips (fit, color balance, layering, footwear, accessories) based ONLY on items listed.
+        5) Keep recommendations concise and actionable.
         """
-
-    # Build a retrieval query
+        # ----------------------------------------------------
+        # Retrieve fashion theory / style context from RAG
+        # ----------------------------------------------------
     desc = " ".join(wardrobe_df["Color"].tolist() + wardrobe_df["Pattern"].tolist())
     query = f"{occasion} {season} {desc}"
-
-    # Retrieve relevant style tips
     docs = retrieve_docs(db, query, k=3)
-
-    # Call Gemini with combined prompt + docs
     return generate_outfit_advice(client, base_prompt, docs, temperature=0.7)
+
 
 # Tab 3: Chat with stylist
 def chat_response(message, history, wardrobe_df, occasion, season):

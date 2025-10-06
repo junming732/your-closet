@@ -140,8 +140,6 @@ def generate_outfit_advice(client, base_prompt: str, docs: list, temperature: fl
 
             Retrieved Style Tips:
             {context}
-
-            {citations}
             """
 
     resp = client.models.generate_content(
