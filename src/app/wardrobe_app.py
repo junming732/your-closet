@@ -4,6 +4,7 @@ from google import genai
 import gradio as gr
 from google.genai import types
 import pandas as pd
+import io
 
 load_dotenv()
 api_key = os.getenv("GOOGLE_API_KEY")

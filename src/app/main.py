@@ -10,16 +10,17 @@ from src.app.wardrobe_app import (
 )
 
 from src.retrieval.gemini_rag import (
-    make_client, GeminiEmbeddings, load_pdf_as_documents,
-    chunk_docs, get_vectorstore
-
+    make_client as gemini_make_client,
+    GeminiEmbeddings, load_pdf_as_documents, chunk_docs, get_vectorstore
+)
+from src.retrieval.fashion_theory_rag import (
+    make_client as fashion_make_client,
+    generate_fashion_theory_advice
 )
 
-from src.retrieval.fashion_theory_rag import make_client, generate_fashion_theory_advice
-
 # Set up
-client = make_client()
-embeddings = GeminiEmbeddings(client)
+embedding_client = gemini_make_client()
+embeddings = GeminiEmbeddings(embedding_client)
 pdf_docs = load_pdf_as_documents("original_contributions/BeginnerGuide_howtodress_original.pdf")
 chunks = chunk_docs(pdf_docs)
 db = get_vectorstore(chunks, embeddings)
@@ -145,7 +146,23 @@ with gr.Blocks(
             )
 
             generate_btn = gr.Button("Generate Outfit", variant="primary")
-            outfit_output = gr.Textbox(label="Your Outfit", lines=6, max_lines=10, interactive=False)
+
+            outfit_output = gr.Markdown(
+                "*(No outfit generated yet)*",
+                label="Your Outfit",
+                container=False
+            )
+
+            # Add interaction logic
+            generate_btn.click(
+                fn=lambda: "⏳ Generating your outfit...",
+                outputs=outfit_output
+            ).then(
+                fn=generate_outfit,
+                inputs=[wardrobe_display, occasion, season, selected_items],
+                outputs=outfit_output,
+                show_progress=True
+            )
 
         # TAB 3: Chat Mode
         with gr.Tab("Chat with Stylist"):
@@ -153,7 +170,7 @@ with gr.Blocks(
 
             chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
             msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
-
+            client = fashion_make_client()
             def handle_fashion_theory_chat(user_message, history):
                 answer = generate_fashion_theory_advice(client, user_message)
                 history = history + [
@@ -167,18 +184,6 @@ with gr.Blocks(
             with gr.Row():
                 send_btn = gr.Button("Send", variant="primary")
                 clear_chat_btn = gr.Button("Clear")
-
-    def user_msg(message, history):
-        return "", history + [{"role": "user", "content": message}]
-
-    def bot_msg(history, wardrobe, occ, seas):
-        user_message = history[-1]["content"]
-        for response in chat_response(user_message, history[:-1], wardrobe, occ, seas):
-            if len(history) > 0 and history[-1]["role"] == "user":
-                history.append({"role": "assistant", "content": response})
-            else:
-                history[-1] = {"role": "assistant", "content": response}
-            yield history
 
     # Events
 
@@ -262,26 +267,18 @@ with gr.Blocks(
         inputs=[wardrobe_display, occasion, season, selected_items],
         outputs=outfit_output
     )
-    # Handle chat: when user presses Enter in text box
+
+    # Both Enter and Send trigger the same Fashion Theory RAG pipeline
     msg.submit(
-        fn=user_msg,
+        fn=handle_fashion_theory_chat,
         inputs=[msg, chatbot],
-        outputs=[msg, chatbot]
-    ).then(
-        fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
-        outputs=chatbot
+        outputs=[chatbot, msg]
     )
 
-    # Handle chat: when user clicks Send button
     send_btn.click(
-        fn=user_msg,
+        fn=handle_fashion_theory_chat,
         inputs=[msg, chatbot],
-        outputs=[msg, chatbot]
-    ).then(
-        fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
-        outputs=chatbot
+        outputs=[chatbot, msg]
     )
 
     clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
