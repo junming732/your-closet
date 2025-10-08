@@ -179,27 +179,7 @@ with gr.Blocks(
             )
 
             generate_btn = gr.Button("Generate Outfit", variant="primary")
-<<<<<<< HEAD
-
-            outfit_output = gr.Markdown(
-                "*(No outfit generated yet)*",
-                label="Your Outfit",
-                container=False
-            )
-
-            # Add interaction logic
-            generate_btn.click(
-                fn=lambda: "⏳ Generating your outfit...",
-                outputs=outfit_output
-            ).then(
-                fn=generate_outfit,
-                inputs=[wardrobe_display, occasion, season, selected_items],
-                outputs=outfit_output,
-                show_progress=True
-            )
-=======
             outfit_output = gr.Markdown(label="Your Outfit", elem_classes="outfit-markdown")
->>>>>>> 7c5b73b (integrate weather api, integrate RAG, integrate safety filters and logging)
 
         # TAB 3: Chat Mode
         with gr.Tab("Chat with Stylist"):
@@ -325,13 +305,8 @@ with gr.Blocks(
         inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state],
         outputs=outfit_output
     )
-<<<<<<< HEAD
-
-    # Both Enter and Send trigger the same Fashion Theory RAG pipeline
-=======
     
     # Handle chat: when user presses Enter in text box
->>>>>>> 7c5b73b (integrate weather api, integrate RAG, integrate safety filters and logging)
     msg.submit(
         fn=handle_fashion_theory_chat,
         inputs=[msg, chatbot],
