@@ -187,20 +187,22 @@ with gr.Blocks(
 
             chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
             msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
-            client = fashion_make_client()
-            def handle_fashion_theory_chat(user_message, history):
-                answer = generate_fashion_theory_advice(client, user_message)
-                history = history + [
-                    {"role": "user", "content": user_message},
-                    {"role": "assistant", "content": answer}
-                ]
-                return history, ""
-
-            msg.submit(handle_fashion_theory_chat, [msg, chatbot], [chatbot, msg])
 
             with gr.Row():
                 send_btn = gr.Button("Send", variant="primary")
                 clear_chat_btn = gr.Button("Clear")
+
+    def user_msg(message, history):
+        return "", history + [{"role": "user", "content": message}]
+
+    def bot_msg(history, wardrobe, occ, seas):
+        user_message = history[-1]["content"]
+        for response in chat_response(user_message, history[:-1], wardrobe, occ, seas):
+            if len(history) > 0 and history[-1]["role"] == "user":
+                history.append({"role": "assistant", "content": response})
+            else:
+                history[-1] = {"role": "assistant", "content": response}
+            yield history
 
     # Events
 
@@ -308,15 +310,24 @@ with gr.Blocks(
     
     # Handle chat: when user presses Enter in text box
     msg.submit(
-        fn=handle_fashion_theory_chat,
+        fn=user_msg,
         inputs=[msg, chatbot],
-        outputs=[chatbot, msg]
+        outputs=[msg, chatbot]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
     )
 
+    # Handle chat: when user clicks Send button
     send_btn.click(
-        fn=handle_fashion_theory_chat,
+        fn=user_msg,
         inputs=[msg, chatbot],
-        outputs=[chatbot, msg]
+        outputs=[msg, chatbot]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
     )
 
     clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
