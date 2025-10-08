@@ -6,7 +6,7 @@ from src.app.ui_config import fashion_theme, custom_css, occasions, seasons
 from src.app.wardrobe_app import (
     add_item_to_wardrobe, upload_csv, enter_edit_mode, exit_edit_mode,
     update_item_choices, delete_selected_items, clear_wardrobe,
-    export_wardrobe_csv, generate_outfit, chat_response
+    export_wardrobe_csv, generate_outfit, chat_response, fetch_weather
 )
 
 from src.retrieval.gemini_rag import (
@@ -65,19 +65,6 @@ with gr.Blocks(
     with gr.Tabs():
         # TAB 1: Wardrobe Management
         with gr.Tab("Your Wardrobe"):
-            # CSV Upload button in top right
-            with gr.Row():
-                gr.Markdown("")
-                csv_upload = gr.UploadButton(
-                    "Upload CSV",
-                    file_types=[".csv"],
-                    file_count="single", # One file at a time
-                    variant="secondary", # Secondary button style
-                    size="sm",           # Small button size
-                    scale=0,
-                    min_width=120
-                )
-
             # Input fields in a 2x2 grid
             with gr.Row():
                 item_name = gr.Textbox(label="Item (e.g., Dress, Jeans)", placeholder="e.g., Dress, Jeans", max_lines=1, container=True, scale=1, elem_classes="centered-input")
@@ -92,11 +79,19 @@ with gr.Blocks(
             with gr.Row():
                 add_btn = gr.Button("+ Add Item", variant="primary", size="sm", scale=0, min_width=150)
 
-            # My Closet title with edit icon
+            # My Closet title with CSV upload and edit buttons
             with gr.Row():
                 gr.Markdown("# My Closet")
-                with gr.Column(scale=0, min_width=200):
+                with gr.Column(scale=0, min_width=300):
                     with gr.Row():
+                        csv_upload = gr.UploadButton(
+                            "Upload CSV",
+                            file_types=[".csv"],
+                            file_count="single",
+                            variant="secondary",
+                            size="sm",
+                            scale=0
+                        )
                         edit_icon_btn = gr.Button("✎ Edit", variant="secondary", size="sm", scale=0)
                         done_editing_btn = gr.Button("Done", variant="primary", size="sm", scale=0, visible=False) # Hidden by default
                         delete_selected_btn = gr.Button("Delete", variant="stop", size="sm", scale=0, visible=False) # Hidden by default
@@ -127,16 +122,54 @@ with gr.Blocks(
             gr.Markdown("Get styling advice based on your wardrobe")
 
             with gr.Row():
-                occasion = gr.Dropdown(
-                    choices=occasions,
-                    label="Occasion",
-                    value="Casual"
+                with gr.Column():
+                    occasion = gr.Dropdown(
+                        choices=occasions,
+                        label="Occasion",
+                        value="Casual"
+                    )
+                with gr.Column():
+                    season = gr.Dropdown(
+                        choices=seasons,
+                        label="Season",
+                        value="Spring"
+                    )
+
+            # Custom occasion input (shown only when "Other" is selected)
+            custom_occasion_input = gr.Textbox(
+                label="Specify your occasion",
+                placeholder="e.g., Job Interview, Wedding Reception, Concert",
+                value="",
+                max_lines=1,
+                visible=False
+            )
+
+            # City input field with live weather option
+            with gr.Row():
+                city_input = gr.Textbox(
+                    label="(Optional) City",
+                    placeholder="e.g., New York, London, Tokyo",
+                    value="",
+                    max_lines=1,
+                    scale=3
                 )
-                season = gr.Dropdown(
-                    choices=seasons,
-                    label="Season",
-                    value="Spring (10-20°C)"
+                use_live_weather = gr.Checkbox(
+                    label="Use Live Weather",
+                    value=False,
+                    scale=1,
+                    container=True
                 )
+
+            weather_display = gr.Textbox(
+                label="Current Weather",
+                value="",
+                interactive=False,
+                visible=False,
+                max_lines=1
+            )
+
+            # Hidden state to store weather data for prompt
+            weather_prompt_state = gr.State(value="")
 
             selected_items = gr.Dropdown(
                 choices=[], # Populated dynamically from wardrobe
@@ -146,6 +179,7 @@ with gr.Blocks(
             )
 
             generate_btn = gr.Button("Generate Outfit", variant="primary")
+<<<<<<< HEAD
 
             outfit_output = gr.Markdown(
                 "*(No outfit generated yet)*",
@@ -163,6 +197,9 @@ with gr.Blocks(
                 outputs=outfit_output,
                 show_progress=True
             )
+=======
+            outfit_output = gr.Markdown(label="Your Outfit", elem_classes="outfit-markdown")
+>>>>>>> 7c5b73b (integrate weather api, integrate RAG, integrate safety filters and logging)
 
         # TAB 3: Chat Mode
         with gr.Tab("Chat with Stylist"):
@@ -261,14 +298,40 @@ with gr.Blocks(
         outputs=[export_file]
     )
 
-    # Generate outfit suggestion based on wardrobe, occasion, season, and (optional) selected items
-    generate_btn.click(
-        fn=generate_outfit,
-        inputs=[wardrobe_display, occasion, season, selected_items],
-        outputs=outfit_output
+    # Fetch weather when checkbox is enabled
+    def handle_weather_toggle(use_weather, city):
+        """Fetch weather when checkbox is checked, clear when unchecked."""
+        if use_weather and city:
+            return fetch_weather(city)
+        else:
+            return "", "", gr.update(visible=False)
+
+    use_live_weather.change(
+        fn=handle_weather_toggle,
+        inputs=[use_live_weather, city_input],
+        outputs=[weather_display, weather_prompt_state, weather_display]
     )
 
+    # Also fetch weather when city changes if checkbox is already enabled
+    city_input.change(
+        fn=handle_weather_toggle,
+        inputs=[use_live_weather, city_input],
+        outputs=[weather_display, weather_prompt_state, weather_display]
+    )
+
+    # Generate outfit suggestion - NOW INCLUDING WEATHER DATA
+    generate_btn.click(
+        fn=generate_outfit,
+        inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state],
+        outputs=outfit_output
+    )
+<<<<<<< HEAD
+
     # Both Enter and Send trigger the same Fashion Theory RAG pipeline
+=======
+    
+    # Handle chat: when user presses Enter in text box
+>>>>>>> 7c5b73b (integrate weather api, integrate RAG, integrate safety filters and logging)
     msg.submit(
         fn=handle_fashion_theory_chat,
         inputs=[msg, chatbot],
@@ -283,6 +346,19 @@ with gr.Blocks(
 
     clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
 
+    # Show/hide custom occasion input based on occasion dropdown selection
+    def toggle_custom_occasion(occasion_value):
+        if occasion_value == "Other":
+            return gr.update(visible=True)
+        else:
+            return gr.update(visible=False)
+
+    occasion.change(
+        fn=toggle_custom_occasion,
+        inputs=[occasion],
+        outputs=[custom_occasion_input]
+    )
+
     # --- FOOTER BANNER (local image) ---
     banner_path = "src/assets/bla.drawio (1).png"
     with gr.Row(elem_classes="footer-banner"):
@@ -294,6 +370,4 @@ with gr.Blocks(
         )
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7861)
-
-
+    demo.launch(server_name="0.0.0.0", server_port=7862)

@@ -1,4 +1,3 @@
-
 # src/app/ui_config.py
 import gradio as gr
 
@@ -104,8 +103,19 @@ table.table tbody td span {
     font-size: 0.9rem !important;
     padding: 0.4rem 1rem !important;
 }
+/* Style Markdown output to match Textbox appearance */
+.outfit-markdown {
+    background-color: #faf8f5 !important;
+    border: 1px solid #d4cdc4 !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    min-height: 150px !important;
+}
+.outfit-markdown .prose {
+    max-width: 100% !important;
+}
 """
 
-# You can also put dropdown choices here:
-occasions = ["Work", "Interview", "Casual", "Date", "Formal", "Gym", "Brunch", "Travel", "Party"]
-seasons = ["Spring (10-20°C)", "Summer (20-30°C)", "Fall (10-20°C)", "Winter (<10°C)"]
+# Dropdown choices - Updated with "Other" option
+occasions = ["Work", "Interview", "Casual", "Date", "Formal", "Gym", "Brunch", "Travel", "Party", "Other"]
+seasons = ["Spring", "Summer", "Fall", "Winter"]

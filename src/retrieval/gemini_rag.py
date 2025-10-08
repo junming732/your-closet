@@ -5,8 +5,13 @@ from pathlib import Path
 from typing import List
 
 from google import genai
+from google.genai import types
 
 from langchain_community.vectorstores import FAISS
+from src.app.logger_config import setup_logger, log_api_call, log_api_success, log_api_error
+
+# Set up logger for this module
+logger = setup_logger(__name__)
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -96,11 +101,29 @@ def get_vectorstore(chunks: List[Document], embeddings: Embeddings) -> FAISS:
 # ---------------------------
 
 def retrieve_docs(db: FAISS, query: str, k: int = 5) -> List[Document]:
-    retriever = db.as_retriever(
-        search_type="mmr",
-        search_kwargs={"k": k, "fetch_k": 20, "lambda_mult": 0.5}
-    )
-    return retriever.get_relevant_documents(query)
+    """
+    Retrieve relevant documents from vector database with logging.
+
+    Args:
+        db: FAISS vector store
+        query: Search query
+        k: Number of documents to retrieve
+
+    Returns:
+        List of relevant documents
+    """
+    try:
+        logger.debug(f"Retrieving {k} documents for query: '{query[:100]}...'")
+        retriever = db.as_retriever(
+            search_type="mmr",
+            search_kwargs={"k": k, "fetch_k": 20, "lambda_mult": 0.5}
+        )
+        docs = retriever.get_relevant_documents(query)
+        logger.info(f"Retrieved {len(docs)} documents successfully")
+        return docs
+    except Exception as e:
+        logger.error(f"Document retrieval failed: {type(e).__name__} - {str(e)}")
+        raise  # Re-raise to be caught by calling function
 
 def format_context(docs: List[Document], max_chars_per_chunk: int = 900) -> str:
     blocks = []
@@ -127,11 +150,21 @@ def format_citations(docs: List[Document]) -> str:
 # Generate Answer
 # ---------------------------
 
-def generate_outfit_advice(client, base_prompt: str, docs: list, temperature: float = 0.7) -> str:
+def generate_outfit_advice(client, base_prompt: str, docs: list, temperature: float = 0.7, safety_settings: list = None):
     """
     Take the stylist prompt built in wardrobe_app.generate_outfit,
     append retrieved style tips from docs,
-    and call Gemini model once.
+    and stream response from Gemini model.
+
+    Args:
+        client: Gemini client instance
+        base_prompt: The stylist prompt with user requirements
+        docs: Retrieved documents for context
+        temperature: Generation temperature (default 0.7)
+        safety_settings: Optional list of SafetySetting objects
+
+    Yields:
+        Chunks of text as they are generated
     """
     context = format_context(docs)
     citations = format_citations(docs)
@@ -142,10 +175,33 @@ def generate_outfit_advice(client, base_prompt: str, docs: list, temperature: fl
             {context}
             """
 
-    resp = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=[{"text": full_prompt}],
-        config={"temperature": temperature}
-    )
-    return resp.text
+    # Build config
+    config_dict = {"temperature": temperature}
+    if safety_settings:
+        config_dict["safety_settings"] = safety_settings
+
+    try:
+        log_api_call(logger, "Gemini API", "generate_outfit_advice", {"temperature": temperature})
+
+        stream = client.models.generate_content_stream(
+            model=GEMINI_MODEL,
+            contents=[{"text": full_prompt}],
+            config=types.GenerateContentConfig(**config_dict)
+        )
+
+        chunk_count = 0
+        for chunk in stream:
+            if chunk.candidates and chunk.candidates[0].content:
+                if chunk.candidates[0].content.parts:
+                    part = chunk.candidates[0].content.parts[0].text
+                    if part:
+                        chunk_count += 1
+                        yield part
+
+        log_api_success(logger, "Gemini API", f"Generated {chunk_count} chunks")
+
+    except Exception as e:
+        log_api_error(logger, "Gemini API", e)
+        logger.error(f"Outfit advice generation failed: {str(e)}", exc_info=True)
+        raise  # Re-raise to be caught by calling function
 

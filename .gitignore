@@ -39,3 +39,7 @@ build/
 
 # lint
 .ruff_cache
+
+# Logs
+logs/
+*.log
