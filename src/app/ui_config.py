@@ -114,8 +114,48 @@ table.table tbody td span {
 .outfit-markdown .prose {
     max-width: 100% !important;
 }
+/* Chat wrapper with overlay positioning */
+.chat-wrapper {
+    position: relative !important;
+}
+
+/* Suggestions overlay - positioned inside chatbot */
+.suggestions-overlay {
+    position: absolute !important;
+    top: 60px !important;
+    left: 20px !important;
+    right: 20px !important;
+    z-index: 10 !important;
+    padding: 20px !important;
+    pointer-events: auto !important;
+    gap: 12px !important;
+}
+
+/* ChatGPT-style suggestion chips */
+.suggestion-chip {
+    border-radius: 12px !important;
+    padding: 12px 20px !important;
+    font-size: 0.9rem !important;
+    font-weight: 400 !important;
+    border: 1px solid #d4cdc4 !important;
+    background: #faf8f5 !important;
+    color: #4a4540 !important;
+    transition: all 0.2s ease !important;
+    flex: 1 !important;
+    white-space: normal !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+.suggestion-chip:hover {
+    background: #e8e4df !important;
+    border-color: #b8c8b8 !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1) !important;
+}
 """
 
 # Dropdown choices - Updated with "Other" option
 occasions = ["Work", "Interview", "Casual", "Date", "Formal", "Gym", "Brunch", "Travel", "Party", "Other"]
-seasons = ["Spring", "Summer", "Fall", "Winter"]
+seasons = ["(None - Use Weather Only)", "Spring", "Summer", "Fall", "Winter"]

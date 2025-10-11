@@ -1,0 +1,221 @@
+FASHION KNOWLEDGE BASE - CONTENT ATTRIBUTIONS
+========================================================================
+
+This file documents all sources used in the Fashion Assistant's knowledge base,
+organized by license type and time period.
+
+========================================================================
+MODERN CONTENT (2014-2024) - CC BY 4.0 LICENSE
+========================================================================
+
+These sources are licensed under Creative Commons Attribution 4.0 International
+(CC BY 4.0). You are free to share and adapt these materials with proper attribution.
+
+1. SUSTAINABLE FASHION Q&A DATASET
+   Author: ktiyab (Tiya B. K.)
+   Year: 2023
+   Title: Sustainable Fashion Q&A Dataset
+   Source: Kaggle
+   Link: https://www.kaggle.com/datasets/tiyabk/sustainable-fashion
+   License: CC BY 4.0
+   Attribution: "Based on Sustainable Fashion Q&A Dataset by ktiyab (2023),
+                licensed under CC BY 4.0"
+
+2. SMART TEXTILES: A REVIEW AND BIBLIOMETRIC MAPPING
+   Authors: Castano-Londono et al.
+   Year: 2023
+   Title: Smart Textiles: Wearable Nanotechnology and Its Application in
+          Healthcare Monitoring
+   Journal: Applied Sciences, MDPI
+   DOI: 10.3390/app131810489
+   Link: https://www.mdpi.com/2076-3417/13/18/10489
+   License: CC BY 4.0
+   Attribution: "Excerpted from Smart Textiles review by Castano-Londono et al.
+                (2023), Applied Sciences MDPI, licensed under CC BY 4.0"
+
+3. SUSTAINABLE FASHION: SHIFTING PARADIGMS
+   Authors: Han et al.
+   Year: 2014
+   Title: Shifting Paradigms for Fashion: From Total to Global to Smart
+          Consumer Experience
+   Journal: Fashion and Textiles, SpringerOpen
+   DOI: 10.1186/s40691-014-0015-4
+   Link: https://fashionandtextiles.springeropen.com/articles/10.1186/s40691-014-0015-4
+   License: CC BY 4.0
+   Attribution: "Based on research by Han et al. (2014), Fashion and Textiles
+                SpringerOpen, licensed under CC BY 4.0"
+
+4. SUSTAINABLE FASHION: PAST, PRESENT AND FUTURE
+   Authors: Niinimäki et al.
+   Year: 2020
+   Title: Sustainable Fashion: Past, Present and Future
+   Journal: Fashion and Textiles, SpringerOpen
+   DOI: 10.1186/s40691-020-00225-9
+   Link: https://fashionandtextiles.springeropen.com/articles/10.1186/s40691-020-00225-9
+   License: CC BY 4.0
+   Attribution: "Based on Sustainable Fashion overview by Niinimäki et al. (2020),
+                Fashion and Textiles SpringerOpen, licensed under CC BY 4.0"
+
+5. FASHION DESIGN RESEARCH: EVALUATION AND TRENDS
+   Authors: Various
+   Year: 2022
+   Title: Evaluation and Trend of Fashion Design Research: Visualization
+          Analysis Based on CiteSpace
+   Journal: Fashion and Textiles, SpringerOpen
+   DOI: 10.1186/s40691-022-00316-6
+   Link: https://fashionandtextiles.springeropen.com/articles/10.1186/s40691-022-00316-6
+   License: CC BY 4.0
+   Attribution: "Based on fashion design research analysis (2022), Fashion and
+                Textiles SpringerOpen, licensed under CC BY 4.0"
+
+6. DRESS, APPEARANCE, AND DIVERSITY IN U.S. SOCIETY
+   Authors: Various (Open Textbook)
+   Year: Recent (exact year varies by edition)
+   Title: Dress, Appearance, and Diversity in U.S. Society
+   Source: Open Textbook Library
+   Link: https://open.umn.edu/opentextbooks/textbooks/1185
+   License: CC BY 4.0
+   Attribution: "Excerpted from Dress, Appearance, and Diversity in U.S. Society,
+                Open Textbook Library, licensed under CC BY 4.0"
+
+
+========================================================================
+BRIDGING CONTENT (1900s-1920s) - PUBLIC DOMAIN
+========================================================================
+
+These sources are in the public domain in the United States and most other
+countries. No attribution is legally required, but we provide it for
+transparency and scholarly integrity.
+
+7. TEXTILES AND CLOTHING
+   Author: Kate Heintz Watson
+   Year: 1907
+   Title: Textiles and Clothing
+   Source: Internet Archive
+   Link: https://archive.org/details/textilesco00watsrich
+   License: Public Domain (published before 1928)
+   Note: Technical fundamentals of fabrics and textile construction
+
+8. CLOTHING AND HEALTH: AN ELEMENTARY TEXTBOOK
+   Authors: Helen Kinne & Anna M. Cooley
+   Year: 1920
+   Title: Clothing and Health: An Elementary Textbook of Home Making
+   Source: Internet Archive
+   Link: https://archive.org/details/clothinghealthan00kinn
+   License: Public Domain (published before 1928)
+   Note: Practical garment care, hygiene, and dressmaking
+
+9. DRESS DESIGN: AN ACCOUNT OF COSTUME FOR ARTISTS & DRESSMAKERS
+   Author: Talbot Hughes
+   Year: 1913
+   Title: Dress Design: An Account of Costume for Artists & Dressmakers
+   Source: Internet Archive
+   Link: https://archive.org/details/dressdesignaccou00hughuoft
+   License: Public Domain (published before 1928)
+   Note: Costume history and pattern construction fundamentals
+
+
+========================================================================
+HISTORICAL CONTENT (1800s) - PUBLIC DOMAIN
+========================================================================
+
+Already in your knowledge base:
+
+10. THE EVOLUTION OF FASHION
+    Author: Florence Mary Gardiner
+    Year: 1897
+    Title: The Evolution of Fashion
+    Source: Project Gutenberg
+    License: Public Domain
+    Note: Historical fashion from Victorian era
+
+11. ORIGIN AND EARLY HISTORY OF THE FASHION PLATE
+    Author: John L. Nevinson
+    Year: Historical (from Project Gutenberg collection)
+    Title: Origin and Early History of the Fashion Plate
+    Source: Project Gutenberg
+    License: Public Domain
+    Note: Fashion illustration history
+
+12. THE KEYSTONE JACKET AND DRESS CUTTER
+    Year: 1895
+    Title: The Keystone Jacket and Dress Cutter
+    Source: Historical archive
+    License: Public Domain (published before 1928)
+    Note: Historical pattern cutting techniques
+
+
+========================================================================
+CREATED CONTENT
+========================================================================
+
+13. MODERN STYLING PRINCIPLES (2000s-2024)
+    Author: Created for this application
+    Year: 2024
+    Title: Modern Fashion Theory and Contemporary Styling Principles
+    Description: Comprehensive synthesis of contemporary fashion movements,
+                 styling techniques, and modern fashion theory from 2000s-2024
+    Content includes:
+    - Athleisure, minimalism, sustainable fashion
+    - Body positivity and inclusive fashion
+    - Modern fabric technology
+    - Digital age fashion considerations
+    - Current styling aesthetics (quiet luxury, dopamine dressing, etc.)
+    - Modern wardrobe building principles
+    - Contemporary color theory
+
+    This document synthesizes widely recognized contemporary fashion principles,
+    sustainable fashion advocacy, body positivity movements, and modern styling
+    practices observed across fashion media and contemporary discourse.
+
+    Created for educational purposes to support fashion styling assistance.
+
+
+========================================================================
+HOW TO USE THESE ATTRIBUTIONS
+========================================================================
+
+When your RAG system retrieves content from CC BY 4.0 sources and includes
+it in responses, consider adding attribution like:
+
+Example for chat responses:
+"Based on research about sustainable fashion from SpringerOpen (CC BY 4.0),
+along with contemporary styling principles..."
+
+For displayed content or reports:
+Include the specific attribution listed above for any CC BY 4.0 source used.
+
+Public domain sources do not require attribution but may be cited for
+scholarly integrity.
+
+
+========================================================================
+LICENSE INFORMATION
+========================================================================
+
+CC BY 4.0 LICENSE SUMMARY:
+You are free to:
+- Share: copy and redistribute the material
+- Adapt: remix, transform, and build upon the material
+
+Under these terms:
+- Attribution: You must give appropriate credit, provide a link to the
+  license, and indicate if changes were made.
+- No additional restrictions: You may not apply legal terms or technological
+  measures that legally restrict others from doing anything the license permits.
+
+Full license: https://creativecommons.org/licenses/by/4.0/
+
+PUBLIC DOMAIN:
+Works published before 1928 in the United States are in the public domain.
+No permission is required to use, adapt, or redistribute these works.
+
+
+========================================================================
+CONTACT & UPDATES
+========================================================================
+
+If you find attribution errors or have questions about these sources,
+please review the links provided above or consult the original publishers.
+
+This attribution file was last updated: 2024

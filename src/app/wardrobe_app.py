@@ -276,6 +276,9 @@ Requirements for this NEW outfit:
 - Still follow all other styling rules below
 """
     
+    # Determine season text for prompt - skip if "(None - Use Weather Only)" is selected
+    season_text = "" if season == "(None - Use Weather Only)" else f"\nSeason: {season}"
+
     # CASE 1 — user selected specific items
     if selected_items:
         selected_text = "\n".join([f"- {item}" for item in selected_items])
@@ -289,30 +292,30 @@ USER SELECTED ITEMS:
 {variation_instruction}
 
 Create a complete outfit for:
-Occasion: {occasion}
-Season: {season}{location_context}
+Occasion: {occasion}{season_text}{location_context}
 
 The user wants to include these specific items in their outfit.
 Build a stylish, cohesive look around those items by adding complementary pieces ONLY from their wardrobe.
 
 STYLIST RULES:
 1) Build the outfit ONLY with items from the user's wardrobe above. Do NOT invent items.
-2) EXTREME EXCEPTION — Missing Category:
+2) Use the "Retrieved Style Tips" below to inform your color matching, layering advice, and styling principles. If the tips are not relevant to this specific request, rely on general fashion principles.
+3) EXTREME EXCEPTION — Missing Category:
    - If an ENTIRE category required for the outfit is absent from the wardrobe (e.g., no shoes uploaded at all), you may suggest ONE external item.
    - You MUST clearly label it as: "Suggestion (missing category): <what & why>".
    - Keep it minimal and complementary to the user's style.
-3) Occasion Mismatch:
+4) Occasion Mismatch:
    - If the wardrobe cannot reasonably meet the occasion (e.g., only gym items for a formal wedding), start by assembling the best possible outfit from the existing wardrobe,
    then clearly state: "Note: Your current wardrobe lacks appropriate options for this occasion."
    - Optionally include up to TWO "Suggestion (gap): ..." lines to fill essentials.
-4) If a city is provided, consider local weather patterns, cultural norms, and style preferences for that area.
-5) If available, insert a tip about weather {location_context} (temperature and conditions). For example,
+5) If a city is provided, consider local weather patterns, cultural norms, and style preferences for that area.
+6) If available, insert a tip about weather {location_context} (temperature and conditions). For example,
    - If rainy/wet, prioritize waterproof items ONLY if present in the wardrobe and explain why.
    - If cold, recommend layering using existing items.
    - If hot, choose lighter options from the wardrobe.
    - If sunny/bright, and the user owns sunglasses or a hat, remind them to bring them. If not owned, DO NOT invent them.
-6) Provide specific pairing/styling tips (fit, color balance, layering) based ONLY on items listed.
-7) Keep recommendations concise and actionable.
+7) Provide specific pairing/styling tips (fit, color balance, layering) based ONLY on items listed.
+8) Keep recommendations concise and actionable.
 
 STRICT SAFETY RULES:
 - You are a fashion stylist. Answer ONLY fashion and styling questions.
@@ -331,27 +334,27 @@ USER'S FULL WARDROBE:
 {variation_instruction}
 
 Create a complete outfit for:
-Occasion: {occasion}
-Season: {season}{location_context}
+Occasion: {occasion}{season_text}{location_context}
 
 STYLIST RULES:
 1) Build the outfit ONLY with items from the user's wardrobe above. Do NOT invent items.
-2) EXTREME EXCEPTION — Missing Category:
+2) Use the "Retrieved Style Tips" below to inform your color matching, layering advice, and styling principles. If the tips are not relevant to this specific request, rely on general fashion principles.
+3) EXTREME EXCEPTION — Missing Category:
    - If an ENTIRE category required for the outfit is absent from the wardrobe (e.g., no shoes uploaded at all), you may suggest ONE external item.
    - You MUST clearly label it as: "Suggestion (missing category): <what & why>".
    - Keep it minimal and complementary to the user's style.
-3) Occasion Mismatch:
+4) Occasion Mismatch:
    - If the wardrobe cannot reasonably meet the occasion (e.g., only gym items for a formal wedding), start by assembling the best possible outfit from the existing wardrobe,
    then clearly state: "Note: Your current wardrobe lacks appropriate options for this occasion."
    - Optionally include up to TWO "Suggestion (gap): ..." lines to fill essentials.
-4) If a city is provided, consider local weather patterns, cultural norms, and style preferences for that area.
-5) If available, insert a tip about weather {location_context} (temperature and conditions). For example,
+5) If a city is provided, consider local weather patterns, cultural norms, and style preferences for that area.
+6) If available, insert a tip about weather {location_context} (temperature and conditions). For example,
    - If rainy/wet, prioritize waterproof items ONLY if present in the wardrobe and explain why.
    - If cold, recommend layering using existing items.
    - If hot, choose lighter options from the wardrobe.
    - If sunny/bright, and the user owns sunglasses or a hat, remind them to bring them. If not owned, DO NOT invent them.
-6) Provide specific pairing/styling tips (fit, color balance, layering) based ONLY on items listed.
-7) Keep recommendations concise and actionable.
+7) Provide specific pairing/styling tips (fit, color balance, layering) based ONLY on items listed.
+8) Keep recommendations concise and actionable.
 
 STRICT SAFETY RULES:
 - You are a fashion stylist. Answer ONLY fashion and styling questions.
@@ -363,8 +366,18 @@ STRICT SAFETY RULES:
 """
 
     # Retrieve fashion theory / style context from RAG
+    # Build comprehensive query with all available context
     desc = " ".join(wardrobe_df["Color"].tolist() + wardrobe_df["Pattern"].tolist())
-    query = f"{occasion} {season} {desc}"
+    selected_desc = " ".join(selected_items) if selected_items else ""
+    weather_desc = weather_data.replace("\n", " ").strip() if weather_data else ""
+    city_desc = city.strip() if city else ""
+
+    # Handle optional season - skip season if user selected "(None - Use Weather Only)"
+    season_for_query = "" if season == "(None - Use Weather Only)" else season
+
+    # Combine all context for better RAG retrieval
+    query_parts = [occasion, season_for_query, city_desc, weather_desc, selected_desc, desc]
+    query = " ".join([part for part in query_parts if part]).strip()
 
     try:
         logger.info(f"Retrieving RAG docs for query: '{query[:100]}...'")

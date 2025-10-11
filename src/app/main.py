@@ -82,19 +82,20 @@ with gr.Blocks(
             # My Closet title with CSV upload and edit buttons
             with gr.Row():
                 gr.Markdown("# My Closet")
-                with gr.Column(scale=0, min_width=300):
-                    with gr.Row():
-                        csv_upload = gr.UploadButton(
-                            "Upload CSV",
-                            file_types=[".csv"],
-                            file_count="single",
-                            variant="secondary",
-                            size="sm",
-                            scale=0
-                        )
-                        edit_icon_btn = gr.Button("✎ Edit", variant="secondary", size="sm", scale=0)
-                        done_editing_btn = gr.Button("Done", variant="primary", size="sm", scale=0, visible=False) # Hidden by default
-                        delete_selected_btn = gr.Button("Delete", variant="stop", size="sm", scale=0, visible=False) # Hidden by default
+                csv_upload = gr.UploadButton(
+                    "Upload CSV",
+                    file_types=[".csv"],
+                    file_count="single",
+                    variant="secondary",
+                    size="sm",
+                    scale=0
+                )
+                edit_icon_btn = gr.Button("✎ Edit", variant="secondary", size="sm", scale=0)
+
+            # Edit mode buttons (Done and Delete) - shown only in edit mode
+            with gr.Row():
+                done_editing_btn = gr.Button("Done", variant="primary", size="sm", scale=0, visible=False) # Hidden by default
+                delete_selected_btn = gr.Button("Delete", variant="stop", size="sm", scale=0, visible=False) # Hidden by default
 
             gr.Markdown("*In edit mode, click the checkboxes in the 'Select' column, then click Delete button*")
 
@@ -132,7 +133,7 @@ with gr.Blocks(
                     season = gr.Dropdown(
                         choices=seasons,
                         label="Season",
-                        value="Spring"
+                        value="Spring"  # Default to Spring, will auto-change to "(None - Use Weather Only)" when weather is enabled
                     )
 
             # Custom occasion input (shown only when "Other" is selected)
@@ -193,40 +194,47 @@ with gr.Blocks(
         with gr.Tab("Chat with Stylist"):
             gr.Markdown("Ask questions or request outfit recommendations")
 
-            chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
-            
-            # Suggestion prompts - visible only when chat is empty
-            with gr.Column(visible=True) as suggestions_group:
-                gr.Markdown("### Try asking me about:")
-                
-                
-                suggestion_1 = gr.Button(
-                    "What should I wear for a first date?",
-                    variant="secondary",
-                    size="sm"
-                )
-                suggestion_2 = gr.Button(
-                    "What are the key principles of garment construction?",
-                       variant="secondary",
-                    size="sm"
-                )
-                
-                suggestion_3 = gr.Button(
-                    "How has fashion evolved from Victorian to modern times?",
-                    variant="secondary",
-                    size="sm"
-                )
-                suggestion_4 = gr.Button(
-                    "How can I build a capsule wardrobe?",
-                    variant="secondary",
-                    size="sm"
-                )
-                
-                suggestion_5 = gr.Button(
-                    "What colors complement each other best?",
-                    variant="secondary",
-                    size="sm"
-                )
+            # Wrapper for chatbot and overlaid suggestions
+            with gr.Group(elem_classes="chat-wrapper"):
+                chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=400, elem_classes="chatbot-with-suggestions")
+
+                # Suggestion prompts - overlaid on chatbot when empty
+                with gr.Column(visible=True, elem_classes="suggestions-overlay") as suggestions_group:
+                    with gr.Row():
+                        suggestion_1 = gr.Button(
+                            "What should I wear for a first date?",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes="suggestion-chip"
+                        )
+                        suggestion_2 = gr.Button(
+                            "What are the key principles of garment construction?",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes="suggestion-chip"
+                        )
+
+                    with gr.Row():
+                        suggestion_3 = gr.Button(
+                            "How has fashion evolved from Victorian to modern times?",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes="suggestion-chip"
+                        )
+                        suggestion_4 = gr.Button(
+                            "How can I build a capsule wardrobe?",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes="suggestion-chip"
+                        )
+
+                    with gr.Row():
+                        suggestion_5 = gr.Button(
+                            "What colors complement each other best?",
+                            variant="secondary",
+                            size="sm",
+                            elem_classes="suggestion-chip"
+                        )
 
             msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
 
@@ -330,10 +338,24 @@ with gr.Blocks(
         else:
             return "", "", gr.update(visible=False)
 
+    # Update season selection based on weather checkbox
+    def update_season_selection(use_weather, city):
+        """Auto-select '(None - Use Weather Only)' when weather is enabled and city is provided."""
+        if use_weather and city.strip():
+            # Auto-select "(None - Use Weather Only)" when weather is enabled
+            return gr.update(value="(None - Use Weather Only)")
+        else:
+            # No change needed
+            return gr.update()
+
     use_live_weather.change(
         fn=handle_weather_toggle,
         inputs=[use_live_weather, city_input],
         outputs=[weather_display, weather_prompt_state, weather_display]
+    ).then(
+        fn=update_season_selection,
+        inputs=[use_live_weather, city_input],
+        outputs=[season]
     )
 
     # Also fetch weather when city changes if checkbox is already enabled
@@ -341,6 +363,10 @@ with gr.Blocks(
         fn=handle_weather_toggle,
         inputs=[use_live_weather, city_input],
         outputs=[weather_display, weather_prompt_state, weather_display]
+    ).then(
+        fn=update_season_selection,
+        inputs=[use_live_weather, city_input],
+        outputs=[season]
     )
 
     # Generate outfit suggestion - NOW INCLUDING WEATHER DATA
