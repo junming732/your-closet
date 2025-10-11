@@ -178,14 +178,56 @@ with gr.Blocks(
                 value=[] # No items selected by default
             )
 
-            generate_btn = gr.Button("Generate Outfit", variant="primary")
+            # State to track previous outfits to avoid repetition
+            previous_outfits_state = gr.State(value=[])
+
+            # Button row with primary generate and secondary regenerate
+            with gr.Row():
+                generate_btn = gr.Button("Generate Outfit", variant="primary", scale=2)
+                regenerate_btn = gr.Button(" Generate Different Outfit", variant="secondary", scale=1, visible=False)
+
             outfit_output = gr.Markdown(label="Your Outfit", elem_classes="outfit-markdown")
+
 
         # TAB 3: Chat Mode
         with gr.Tab("Chat with Stylist"):
             gr.Markdown("Ask questions or request outfit recommendations")
 
             chatbot = gr.Chatbot(label="Fashion Chat", type='messages', height=300)
+            
+            # Suggestion prompts - visible only when chat is empty
+            with gr.Column(visible=True) as suggestions_group:
+                gr.Markdown("### Try asking me about:")
+                
+                
+                suggestion_1 = gr.Button(
+                    "What should I wear for a first date?",
+                    variant="secondary",
+                    size="sm"
+                )
+                suggestion_2 = gr.Button(
+                    "What are the key principles of garment construction?",
+                       variant="secondary",
+                    size="sm"
+                )
+                
+                suggestion_3 = gr.Button(
+                    "How has fashion evolved from Victorian to modern times?",
+                    variant="secondary",
+                    size="sm"
+                )
+                suggestion_4 = gr.Button(
+                    "How can I build a capsule wardrobe?",
+                    variant="secondary",
+                    size="sm"
+                )
+                
+                suggestion_5 = gr.Button(
+                    "What colors complement each other best?",
+                    variant="secondary",
+                    size="sm"
+                )
+
             msg = gr.Textbox(label="Message", placeholder="What should I wear today?", lines=1, max_lines=2)
 
             with gr.Row():
@@ -308,29 +350,6 @@ with gr.Blocks(
         outputs=outfit_output
     )
     
-    # Handle chat: when user presses Enter in text box
-    msg.submit(
-        fn=user_msg,
-        inputs=[msg, chatbot],
-        outputs=[msg, chatbot]
-    ).then(
-        fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
-        outputs=chatbot
-    )
-
-    # Handle chat: when user clicks Send button
-    send_btn.click(
-        fn=user_msg,
-        inputs=[msg, chatbot],
-        outputs=[msg, chatbot]
-    ).then(
-        fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
-        outputs=chatbot
-    )
-
-    clear_chat_btn.click(fn=lambda: [], outputs=chatbot)
 
     # Show/hide custom occasion input based on occasion dropdown selection
     def toggle_custom_occasion(occasion_value):
@@ -344,6 +363,130 @@ with gr.Blocks(
         inputs=[occasion],
         outputs=[custom_occasion_input]
     )
+
+    def handle_generate_outfit(wardrobe, occ, seas, city, items, custom_occ, weather, prev_outfits):
+        """Wrapper to handle initial outfit generation and show regenerate button"""
+        outfit_gen = generate_outfit(wardrobe, occ, seas, city, items, custom_occ, weather, prev_outfits)
+        final_outfit = ""
+        
+        for chunk in outfit_gen:
+            final_outfit = chunk
+            yield chunk, gr.update(visible=False), prev_outfits  # Hide regenerate during generation
+        
+        # After generation completes, show regenerate button and update history
+        new_history = prev_outfits + [final_outfit]
+        yield final_outfit, gr.update(visible=True), new_history
+
+    generate_btn.click(
+        fn=lambda: ([], gr.update(visible=False)),  # Reset history and hide regenerate button
+        outputs=[previous_outfits_state, regenerate_btn]
+    ).then(
+        fn=handle_generate_outfit,
+        inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state, previous_outfits_state],
+        outputs=[outfit_output, regenerate_btn, previous_outfits_state]
+    )
+
+    # Regenerate outfit with different suggestions
+    regenerate_btn.click(
+        fn=handle_generate_outfit,
+        inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state, previous_outfits_state],
+        outputs=[outfit_output, regenerate_btn, previous_outfits_state]
+    )
+    
+
+    # Helper function to handle suggestion clicks
+    def handle_suggestion_click(suggestion_text, history):
+        """When user clicks a suggestion, add it as a user message, hide suggestions"""
+        new_history = history + [{"role": "user", "content": suggestion_text}]
+        return "", new_history, gr.update(visible=False)
+    
+    # Helper to handle user messages and hide suggestions
+    def user_msg_with_hide(message, history):
+        """Add user message and hide suggestions"""
+        if not message.strip():
+            return message, history, gr.update(visible=len(history) == 0)
+        new_history = history + [{"role": "user", "content": message}]
+        return "", new_history, gr.update(visible=False)
+    
+    # Suggestion button handlers
+    suggestion_1.click(
+        fn=lambda h: handle_suggestion_click("What should I wear for a first date?", h),
+        inputs=[chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+    
+    suggestion_2.click(
+        fn=lambda h: handle_suggestion_click("What are the key principles of garment construction?", h),
+        inputs=[chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+    
+    suggestion_3.click(
+        fn=lambda h: handle_suggestion_click("How has fashion evolved from Victorian to modern times?", h),
+        inputs=[chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+    
+    suggestion_4.click(
+        fn=lambda h: handle_suggestion_click("How can I build a capsule wardrobe?", h),
+        inputs=[chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+    
+    suggestion_5.click(
+        fn=lambda h: handle_suggestion_click("What colors complement each other best?", h),
+        inputs=[chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+    
+    # Handle chat: when user presses Enter in text box
+    msg.submit(
+        fn=user_msg_with_hide,
+        inputs=[msg, chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+
+    # Handle chat: when user clicks Send button
+    send_btn.click(
+        fn=user_msg_with_hide,
+        inputs=[msg, chatbot],
+        outputs=[msg, chatbot, suggestions_group]
+    ).then(
+        fn=bot_msg,
+        inputs=[chatbot, wardrobe_display, occasion, season],
+        outputs=chatbot
+    )
+
+    # Clear chat and show suggestions again
+    clear_chat_btn.click(
+        fn=lambda: ([], gr.update(visible=True)),
+        outputs=[chatbot, suggestions_group]
+    )
+
 
     # --- FOOTER BANNER (local image) ---
     banner_path = "src/assets/bla.drawio (1).png"
