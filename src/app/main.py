@@ -9,21 +9,13 @@ from src.app.wardrobe_app import (
     export_wardrobe_csv, generate_outfit, chat_response, fetch_weather
 )
 
-from src.retrieval.gemini_rag import (
-    make_client as gemini_make_client,
-    GeminiEmbeddings, load_pdf_as_documents, chunk_docs, get_vectorstore
-)
 from src.retrieval.fashion_theory_rag import (
     make_client as fashion_make_client,
     generate_fashion_theory_advice
 )
 
-# Set up
-embedding_client = gemini_make_client()
-embeddings = GeminiEmbeddings(embedding_client)
-pdf_docs = load_pdf_as_documents("original_contributions/BeginnerGuide_howtodress_original.pdf")
-chunks = chunk_docs(pdf_docs)
-db = get_vectorstore(chunks, embeddings)
+# Note: FAISS indexes are loaded in wardrobe_app.py
+# (beginner_db and theory_db are initialized there)
 
 
 # --- Gradio app state ---
@@ -245,9 +237,9 @@ with gr.Blocks(
     def user_msg(message, history):
         return "", history + [{"role": "user", "content": message}]
 
-    def bot_msg(history, wardrobe, occ, seas):
+    def bot_msg(history, wardrobe):
         user_message = history[-1]["content"]
-        for response in chat_response(user_message, history[:-1], wardrobe, occ, seas):
+        for response in chat_response(user_message, history[:-1], wardrobe):
             if len(history) > 0 and history[-1]["role"] == "user":
                 history.append({"role": "assistant", "content": response})
             else:
@@ -369,14 +361,6 @@ with gr.Blocks(
         outputs=[season]
     )
 
-    # Generate outfit suggestion - NOW INCLUDING WEATHER DATA
-    generate_btn.click(
-        fn=generate_outfit,
-        inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state],
-        outputs=outfit_output
-    )
-    
-
     # Show/hide custom occasion input based on occasion dropdown selection
     def toggle_custom_occasion(occasion_value):
         if occasion_value == "Other":
@@ -404,8 +388,8 @@ with gr.Blocks(
         yield final_outfit, gr.update(visible=True), new_history
 
     generate_btn.click(
-        fn=lambda: ([], gr.update(visible=False)),  # Reset history and hide regenerate button
-        outputs=[previous_outfits_state, regenerate_btn]
+        fn=lambda: ("", [], gr.update(visible=False)),  # Clear outfit display, reset history, and hide regenerate button
+        outputs=[outfit_output, previous_outfits_state, regenerate_btn]
     ).then(
         fn=handle_generate_outfit,
         inputs=[wardrobe_display, occasion, season, city_input, selected_items, custom_occasion_input, weather_prompt_state, previous_outfits_state],
@@ -441,50 +425,50 @@ with gr.Blocks(
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
-    
+
     suggestion_2.click(
         fn=lambda h: handle_suggestion_click("What are the key principles of garment construction?", h),
         inputs=[chatbot],
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
-    
+
     suggestion_3.click(
         fn=lambda h: handle_suggestion_click("How has fashion evolved from Victorian to modern times?", h),
         inputs=[chatbot],
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
-    
+
     suggestion_4.click(
         fn=lambda h: handle_suggestion_click("How can I build a capsule wardrobe?", h),
         inputs=[chatbot],
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
-    
+
     suggestion_5.click(
         fn=lambda h: handle_suggestion_click("What colors complement each other best?", h),
         inputs=[chatbot],
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
-    
+
     # Handle chat: when user presses Enter in text box
     msg.submit(
         fn=user_msg_with_hide,
@@ -492,7 +476,7 @@ with gr.Blocks(
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
 
@@ -503,7 +487,7 @@ with gr.Blocks(
         outputs=[msg, chatbot, suggestions_group]
     ).then(
         fn=bot_msg,
-        inputs=[chatbot, wardrobe_display, occasion, season],
+        inputs=[chatbot, wardrobe_display],
         outputs=chatbot
     )
 

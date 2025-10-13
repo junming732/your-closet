@@ -1,4 +1,3 @@
-"""Centralized logging configuration for the fashion stylist app."""
 import logging
 import sys
 from pathlib import Path

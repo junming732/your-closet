@@ -10,17 +10,15 @@ from google.genai import types
 from langchain_community.vectorstores import FAISS
 from src.app.logger_config import setup_logger, log_api_call, log_api_success, log_api_error
 
-# Set up logger for this module
+# Logger 
 logger = setup_logger(__name__)
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pdfminer.high_level import extract_text
 
-# ---------------------------
-# Gemini Client Setup
-# ---------------------------
 
+# Gemini Client Setup
 def make_client(api_key: str = None):
     """Create Gemini API client."""
     if api_key is None:
@@ -29,14 +27,11 @@ def make_client(api_key: str = None):
         raise ValueError("GOOGLE_API_KEY env var is not set")
     return genai.Client(api_key=api_key)
 
-# default model names from her notebook
-GEMINI_MODEL = "gemini-2.5-flash"  # can be changed in app
-INDEX_DIR = "faiss_index"          # folder to save FAISS index
+GEMINI_MODEL = "gemini-2.5-flash"  
+BEGINNER_INDEX_DIR = "faiss_index/beginner_guide"  # Practical styling tips
+THEORY_INDEX_DIR = "faiss_index/fashion_theory"     # Academic fashion knowledge
 
-# ---------------------------
 # Embeddings (Gemini)
-# ---------------------------
-
 class GeminiEmbeddings(Embeddings):
     def __init__(self, client, model="text-embedding-004"):
         self.client = client
@@ -59,10 +54,8 @@ class GeminiEmbeddings(Embeddings):
         )
         return result.embeddings[0].values
 
-# ---------------------------
-# PDF -> Documents
-# ---------------------------
 
+# PDF -> Documents
 def load_pdf_as_documents(path: str) -> List[Document]:
     """Extract text from PDF and create documents with page metadata."""
     raw = extract_text(path) or ""
@@ -72,10 +65,7 @@ def load_pdf_as_documents(path: str) -> List[Document]:
         docs.append(Document(page_content=page, metadata={"source": path, "page": i}))
     return docs
 
-# ---------------------------
 # Chunking
-# ---------------------------
-
 def chunk_docs(docs: List[Document]) -> List[Document]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=800,
@@ -84,22 +74,30 @@ def chunk_docs(docs: List[Document]) -> List[Document]:
     )
     return splitter.split_documents(docs)
 
-# ---------------------------
 # Build / Load Vector Store
-# ---------------------------
+def get_vectorstore(chunks: List[Document], embeddings: Embeddings, index_dir: str) -> FAISS:
+    """
+    Build or load a FAISS vector store.
 
-def get_vectorstore(chunks: List[Document], embeddings: Embeddings) -> FAISS:
-    if Path(INDEX_DIR).exists():
-        db = FAISS.load_local(INDEX_DIR, embeddings, allow_dangerous_deserialization=True)
+    Args:
+        chunks: Document chunks to index
+        embeddings: Embeddings model
+        index_dir: Directory path for the index
+
+    Returns:
+        FAISS vector store
+    """
+    if Path(index_dir).exists():
+        db = FAISS.load_local(index_dir, embeddings, allow_dangerous_deserialization=True)
+        logger.info(f"Loaded existing index from {index_dir}")
     else:
         db = FAISS.from_documents(chunks, embeddings)
-        db.save_local(INDEX_DIR)
+        db.save_local(index_dir)
+        logger.info(f"Created new index at {index_dir} with {len(chunks)} chunks")
     return db
 
-# ---------------------------
-# Retrieval
-# ---------------------------
 
+# Retrieval
 def retrieve_docs(db: FAISS, query: str, k: int = 5) -> List[Document]:
     """
     Retrieve relevant documents from vector database with logging.
@@ -119,20 +117,29 @@ def retrieve_docs(db: FAISS, query: str, k: int = 5) -> List[Document]:
             search_kwargs={"k": k, "fetch_k": 20, "lambda_mult": 0.5}
         )
         docs = retriever.get_relevant_documents(query)
-        logger.info(f"Retrieved {len(docs)} documents successfully")
         return docs
     except Exception as e:
         logger.error(f"Document retrieval failed: {type(e).__name__} - {str(e)}")
         raise  # Re-raise to be caught by calling function
 
 def format_context(docs: List[Document], max_chars_per_chunk: int = 900) -> str:
+    """
+    Format retrieved documents for the AI prompt (without page references).
+    Page references are logged separately for debugging.
+    """
     blocks = []
     for d in docs:
         page = d.metadata.get("page", "?")
         text = d.page_content.strip().replace("\n", " ")
         if len(text) > max_chars_per_chunk:
             text = text[:max_chars_per_chunk] + "…"
-        blocks.append(f"[p.{page}] {text}")
+
+        # Log page reference for debugging
+        logger.debug(f"Retrieved chunk from page {page}: {text[:100]}...")
+
+        # Add only text (no page reference) for AI
+        blocks.append(text)
+
     return "\n\n".join(blocks)
 
 def format_citations(docs: List[Document]) -> str:
@@ -146,10 +153,8 @@ def format_citations(docs: List[Document]) -> str:
         return "Sources: (no page markers)"
     return "Sources: " + ", ".join([f"p.{p}" for p in pages])
 
-# ---------------------------
-# Generate Answer
-# ---------------------------
 
+# Generate Answer
 def generate_outfit_advice(client, base_prompt: str, docs: list, temperature: float = 0.7, safety_settings: list = None):
     """
     Take the stylist prompt built in wardrobe_app.generate_outfit,

@@ -117,10 +117,7 @@ def format_context_and_citations(docs: List[Document], max_chars: int = 900):
     return context_text, citations_text
 
 
-# ---------------------------
 # Generate Answer
-# ---------------------------
-
 def generate_fashion_theory_advice(client, question: str, temperature: float = 0.7) -> str:
     """
     Answer a question using the Fashion Theory RAG.
